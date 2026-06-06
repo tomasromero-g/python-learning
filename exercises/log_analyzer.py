@@ -42,9 +42,9 @@ def register_operation(operation_name: str):
             message = (
                 f"[START] '{operation_name}' - {start_time.time().strftime('%H:%M:%S')}\n"
                 f"[END] '{operation_name}' - {end_time.time().strftime('%H:%M:%S')}\n"
-                f"[DURATION] '{operation_name}' - {total_time.total_seconds():4f}s\n"
+                f"[DURATION] '{operation_name}' - {total_time.total_seconds():.4f}s\n"
             )
-            print(message)
+            print(message, end="")
             directory = os.path.join(py_file_path, "auditory.log")
             with open(directory, "a", encoding="utf-8") as log:
                 log.write(message)
@@ -55,14 +55,30 @@ def register_operation(operation_name: str):
     return decorator_register_operation
 
 
-# Unfinished
 @register_operation("Load logs")
 def load_logs(filepath):
+    filepath = os.path.join(py_file_path, filepath)
     try:
         with open(filepath, "r") as f:
-            while True:
-                line = f.readline()
-                parts = line.split("|", maxsplit=3)      
+            keys = [
+                {
+                    "timestamp": split[0].strip(),
+                    "level": split[1].strip(),
+                    "service": split[2].strip(),
+                    "message": split[3].strip(),
+                }
+                for line in f.readlines()
+                for split in [line.split("|", maxsplit=3)]
+                if len(split) >= 4
+            ]
+            f.seek(0)
+            file_lines_amount = sum(1 for line in f)
+            correct_lines_amount = len(keys)
+            if file_lines_amount > correct_lines_amount:
+                print(
+                    f"There were {file_lines_amount - correct_lines_amount} lines that didn't "
+                    "respect the format and weren't added to the list."
+                )
     except FileNotFoundError:
         print(f"We couldn't find the file located at {filepath}.")
         raise
@@ -72,7 +88,8 @@ def load_logs(filepath):
     except Exception as e:
         print(f"Unexpected error: {e}.")
         raise
+    return keys
 
 
 create_serverlog()
-load_logs("a")
+load_logs("server.log")
