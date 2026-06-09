@@ -59,7 +59,7 @@ def register_operation(operation_name: str):
 def load_logs(filepath):
     filepath = os.path.join(py_file_path, filepath)
     try:
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             keys = [
                 {
                     "timestamp": split[0].strip(),
@@ -91,5 +91,33 @@ def load_logs(filepath):
     return keys
 
 
+@register_operation("Save report")
+def save_report(logs: dict):
+    filepath = os.path.join(py_file_path, "report.csv")
+    valid_registers = [
+        register for register in logs if register["level"] in ("ERROR", "CRITICAL")
+    ]
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write("timestamp,level,service,message\n")
+        for register in valid_registers:
+            f.write(
+                f"{register["timestamp"]},{register["level"]},{register["service"]},{register["message"]}\n"
+            )
+
+
+# Unfinished
+@register_operation("Analyze logs")
+def analyze_logs(logs: dict) -> dict:
+    total_registers = len(logs)
+    all_levels = [log["level"] for log in logs]
+    levels = set(all_levels)
+    by_level = {level: all_levels.count(level) for level in levels}
+    all_services = [log["service"] for log in logs]
+    services = set(all_services)
+    by_service = {service: all_services.count(service) for service in services}
+
+
 create_serverlog()
-load_logs("server.log")
+logs = load_logs("server.log")
+save_report(logs)
+analyze_logs(logs)
