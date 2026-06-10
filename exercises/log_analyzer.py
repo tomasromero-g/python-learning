@@ -2,6 +2,7 @@ import random
 from datetime import datetime
 import os
 from functools import wraps
+from pprint import pprint
 
 py_file_path = os.path.dirname(
     os.path.abspath(__file__)  # Route of the directory where .py file is
@@ -105,19 +106,65 @@ def save_report(logs: dict):
             )
 
 
-# Unfinished
 @register_operation("Analyze logs")
 def analyze_logs(logs: dict) -> dict:
-    total_registers = len(logs)
+    total_registers = len(logs)  # First pair
     all_levels = [log["level"] for log in logs]
     levels = set(all_levels)
-    by_level = {level: all_levels.count(level) for level in levels}
+    by_level = {level: all_levels.count(level) for level in levels}  # Second pair
     all_services = [log["service"] for log in logs]
     services = set(all_services)
-    by_service = {service: all_services.count(service) for service in services}
+    by_service = {  # Third pair
+        service: all_services.count(service) for service in services
+    }
+    all_critic_services = [
+        log["service"] for log in logs if log["level"] in ("ERROR", "CRITICAL")
+    ]
+    critic_services = set(all_critic_services)
+    amount_critic_services = {
+        service: all_critic_services.count(service) for service in critic_services
+    }
+    top3_critic_services = sorted(  # Fourth pair
+        amount_critic_services,
+        key=amount_critic_services.get,
+        reverse=True,
+    )[:3]
+    all_hours = [log["timestamp"][11:13] for log in logs]
+    hours = set(all_hours)
+    registers_by_hour = {hour: all_hours.count(hour) for hour in hours}
+    most_active_hour = max(registers_by_hour, key=registers_by_hour.get)  # Fifth pair
+    ratio_error = round(len(all_critic_services) / total_registers, 4)  # Sixth pair
+    return {
+        "total_registers": total_registers,
+        "by_level": by_level,
+        "by_service": by_service,
+        "top3_critic_services": top3_critic_services,
+        "most_active_hour": most_active_hour,
+        "ratio_error": ratio_error,
+    }
 
 
+@register_operation("Filter logs")
+def filter_logs(logs: dict, *levels, service=None, has=None) -> list:
+    if levels:
+        logs = [log for log in logs if log["level"] in levels]
+    if service:
+        logs = [log for log in logs if log["service"] == service]
+    if has:
+        logs = [log for log in logs if has.lower() in log["message"].lower()]
+    return list(logs)
+
+
+print("Creating logs...")
 create_serverlog()
+print("\n=== LOGS ===")
 logs = load_logs("server.log")
+pprint(logs)
+print("\n=== ANALYSIS ===")
+data = analyze_logs(logs)
+pprint(data)
+print("\n=== FILTERING ===")
+filtered = filter_logs(logs, "ERROR", "CRITICAL", service="DBService", has="TIMEOUT")
+pprint(filtered)
+print("\nSaving report...")
 save_report(logs)
-analyze_logs(logs)
