@@ -15,13 +15,14 @@ def audit(operation: str):
         @wraps(original_function)
         def wrapper_function_audit(*args, **kwargs):
             logs = []
+            error = None
             try:
                 result = original_function(*args, **kwargs)
                 status = "OK"
                 if isinstance(result, (list, dict)):
                     detail = f"{len(result)} elements processed."
                 else:
-                    detail = "Ejecution completed succesfully."
+                    detail = "Execution completed succesfully."
             except Exception as e:
                 status = "ERROR"
                 detail = str(e)
@@ -49,7 +50,7 @@ def audit(operation: str):
     return decorator_function_audit
 
 
-@audit("Generate logs")
+@audit("Generation")
 def generate_logs(file: str, n: int):
     levels = ("INFO", "WARNING", "ERROR", "CRITICAL")
     modules = ("vission", "lenguage", "memory", "engine", "ethic")
@@ -101,7 +102,7 @@ def generate_logs(file: str, n: int):
         json.dump(events, f, indent=2)
 
 
-@audit("Load")
+@audit("Loading")
 def load_logs(file: str) -> list:
     expected_keys = (
         "id",
@@ -144,6 +145,59 @@ def load_logs(file: str) -> list:
     return valid_and_invalid_logs
 
 
-generate_logs("logs.json", 150)
+@audit("Reparation")
+def repair_logs(logs: list) -> dict:
+    repaired = []
+    unrecoverable = []
+    clean = []
+    for log in logs:
+        if log["_valid"]:
+            clean.append(log)
+        elif "missing" in log["_reason"].lower():
+            unrecoverable.append(log)
+        else:
+            log["metrics"] = {"cpu": -1, "ram": -1, "latency_ms": -1}
+            log["_repaired"] = True
+            repaired.append(log)
+    return {"repaired": repaired, "unrecoverable": unrecoverable, "clean": clean}
+
+
+@audit("Consult")
+def analyze(repaired_logs: dict, **filters) -> list:
+    logs = repaired_logs["repaired"] + repaired_logs["clean"]
+    if "level" in filters:
+        logs = [log for log in logs if log["level"] == filters["level"]]
+    if "module" in filters:
+        logs = [log for log in logs if log["module"] == filters["module"]]
+    if "cpu_min" in filters:
+        logs = [log for log in logs if log["metrics"]["cpu"] >= filters["cpu_min"]]
+    if "valids_only" in filters:
+        logs = [log for log in logs if log.get("_valid")]
+    return sorted(
+        logs, key=lambda l: (l["timestamp"], l["metrics"]["latency_ms"]), reverse=True
+    )
+
+
+# Unfinished
+@audit("Report")
+def export_report(repaired_logs: dict, output_file: str):
+    logs = (
+        repaired_logs["repaired"]
+        + repaired_logs["clean"]
+        + repaired_logs["unrecoverable"]
+    )
+    total = len(logs)
+    valids = len([log for log in logs if log["_valid"]])
+    repaired = len(repaired_logs["repaired"])
+    unrecoverables = len(repaired_logs["unrecoverable"])
+    all_levels_logs = [log["level"] for log in logs]
+    levels_set = set(all_levels_logs)
+    by_level = {level: all_levels_logs.count(level) for level in levels_set}
+    all_modules_logs = [log["module"] for log in logs]
+    modules_set = set(all_modules_logs)
+    by_module = {module: all_modules_logs.count(module) for module in modules_set}
+
+
 logs = load_logs("logs.json")
-pprint(logs)
+repaired_logs = repair_logs(logs)
+filtered_logs = analyze(repaired_logs)
