@@ -178,7 +178,6 @@ def analyze(repaired_logs: dict, **filters) -> list:
     )
 
 
-# Unfinished
 @audit("Report")
 def export_report(repaired_logs: dict, output_file: str):
     logs = (
@@ -190,14 +189,46 @@ def export_report(repaired_logs: dict, output_file: str):
     valids = len([log for log in logs if log["_valid"]])
     repaired = len(repaired_logs["repaired"])
     unrecoverables = len(repaired_logs["unrecoverable"])
-    all_levels_logs = [log["level"] for log in logs]
+    all_levels_logs = [log["level"] for log in logs if log.get("level")]
     levels_set = set(all_levels_logs)
     by_level = {level: all_levels_logs.count(level) for level in levels_set}
-    all_modules_logs = [log["module"] for log in logs]
+    all_modules_logs = [log["module"] for log in logs if log.get("module")]
     modules_set = set(all_modules_logs)
     by_module = {module: all_modules_logs.count(module) for module in modules_set}
+    all_latencys = sum(log["metrics"]["latency_ms"] for log in repaired_logs["clean"])
+    avg_latency_ms = round(
+        all_latencys / len(repaired_logs["clean"]) if repaired_logs["clean"] else 0, 2
+    )
+    all_critical_error = [
+        log
+        for log in repaired_logs["clean"]
+        if log["level"] in ("CRITICAL", "ERROR") and log["metrics"]["cpu"] > 85
+    ]
+    critical_events = sorted(
+        all_critical_error, key=lambda l: l["metrics"]["latency_ms"], reverse=True
+    )
+    top5_high_cpu = sorted(
+        repaired_logs["clean"], key=lambda l: l["metrics"]["cpu"], reverse=True
+    )[0:5]
+    with open(output_file, "w") as f:
+        report = {
+            "summary": {
+                "total": total,
+                "valids": valids,
+                "repaired": repaired,
+                "unrecoverables": unrecoverables,
+                "by_level": by_level,
+                "by_module": by_module,
+                "avg_latency_ms": avg_latency_ms,
+            },
+            "critical_events": critical_events,
+            "top5_high_cpu": top5_high_cpu,
+        }
+        json.dump(report, f, indent=2)
 
 
+generate_logs("logs.json", 1500)
 logs = load_logs("logs.json")
 repaired_logs = repair_logs(logs)
 filtered_logs = analyze(repaired_logs)
+export_report(repaired_logs, "report.json")
