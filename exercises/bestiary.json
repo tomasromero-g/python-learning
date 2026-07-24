@@ -1,0 +1,64 @@
+[
+  {
+    "name": "Giga zombie",
+    "creature_type": "Physic",
+    "hp": 50000,
+    "attack": 130,
+    "defense": 200,
+    "extra_attributes": {
+      "extra_attributes": {
+        "phases": 2
+      }
+    }
+  },
+  {
+    "name": "Void Warden",
+    "creature_type": "magic",
+    "hp": 28000,
+    "attack": 95,
+    "defense": 140,
+    "extra_attributes": {
+      "extra_attributes": {
+        "boss_mode": "shadow_realm",
+        "arena_lock": "true"
+      }
+    }
+  },
+  {
+    "name": "Blaze Emperor",
+    "creature_type": "summoner",
+    "hp": 32000,
+    "attack": 110,
+    "defense": 125,
+    "extra_attributes": {
+      "extra_attributes": {
+        "flame_aura": "inferno"
+      }
+    }
+  },
+  {
+    "name": "Dreadfang",
+    "creature_type": "assasin",
+    "hp": 26000,
+    "attack": 118,
+    "defense": 90,
+    "extra_attributes": {
+      "extra_attributes": {
+        "ambush_bonus": "nightmare",
+        "fear_effect": "true"
+      }
+    }
+  },
+  {
+    "name": "Stone Titan",
+    "creature_type": "physic",
+    "hp": 36000,
+    "attack": 88,
+    "defense": 259,
+    "extra_attributes": {
+      "extra_attributes": {
+        "earth_shield": "unstoppable"
+      }
+    }
+  }
+]

@@ -1,4 +1,10 @@
 from functools import wraps
+from pprint import pprint
+import os
+import json
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+file = "bestiary.json"
 
 
 class Creature:
@@ -59,8 +65,39 @@ def summon_validator(hp_min, atk_min, def_min):
     return decorator_summon_validator
 
 
+@summon_validator(200, 20, 15)
 def summon_creature(**kwargs):
-    pass
+    Creature(**kwargs)
 
 
-giga_zombie = Creature("Giga zombie", "Physic", 50000, 130, 200, phases=2)
+def top_creatures(n: int) -> list:
+    return sorted(
+        Creature.global_bestiary, key=lambda c: (-c.calculate_power(), c.name)
+    )[:n]
+
+
+def legendaries_only() -> dict:  # Legendary = Power > 50
+    legendaries_dict = {}
+    for creature in Creature.global_bestiary:
+        power = creature.calculate_power()
+        if power > 50:
+            legendaries_dict[creature.name] = power
+    return legendaries_dict
+
+
+def export_bestiary():
+    creatures = []
+    for creature in Creature.global_bestiary:
+        creatures.append(creature.__dict__)
+    with open(file, "w") as f:
+        json.dump(creatures, f, indent=2)
+
+
+# Known issue: reloading re-triggers population count + balance law
+if os.path.exists(file):
+    with open(file, "r") as f:
+        creatures = json.load(f)
+    for creature in creatures:
+        summon_creature(**creature)
+
+export_bestiary()
