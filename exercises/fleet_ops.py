@@ -26,6 +26,27 @@ class Vehicle:
     def __repr__(self):
         return f"Vehicle({self.vehicle_id!r}, {self.brand!r}, {self.model!r}, {self.max_range_km}, {self.battery_level})"
 
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.vehicle_id == other.vehicle_id
+
+    def __lt__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return self.battery_level < other.battery_level
+
+    def __add__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return Vehicle(
+            f"{self.vehicle_id}+{other.vehicle_id}",
+            f"HYBRID {self.brand}, {other.brand}",
+            f"HYBRID {self.model}, {other.model}",
+            self.max_range_km + other.max_range_km,
+            int((self.battery_level + other.battery_level) / 2),
+        )
+
     @classmethod
     def from_string(cls, string):
         expected_length = 5
@@ -84,6 +105,48 @@ class DeliveryDrone(Vehicle):
         super().__init__(vehicle_id, brand, model, max_range_km, battery_level)
         self.payload_kg = payload_kg
 
+    def __str__(self):
+        return super().__str__() + f" | Payload: {self.payload_kg}kg"
+
+    def __repr__(self):
+        return (
+            f"DeliveryDrone({self.vehicle_id!r}, {self.brand!r}, "
+            f"{self.model!r}, {self.max_range_km}, {self.battery_level}, {self.payload_kg})"
+        )
+
+    def __add__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return DeliveryDrone(
+            f"{self.vehicle_id}+{other.vehicle_id}",
+            f"HYBRID {self.brand}, {other.brand}",
+            f"HYBRID {self.model}, {other.model}",
+            self.max_range_km + other.max_range_km,
+            int((self.battery_level + other.battery_level) / 2),
+            self.payload_kg + other.payload_kg,
+        )
+
+    @classmethod
+    def from_string(cls, string):
+        expected_length = 6
+        try:
+            d_drone = string.split("|")
+            vehicle_id, brand, model, max_range_km, battery_level, payload_kg = d_drone
+            max_range_km, battery_level, payload_kg = (
+                int(max_range_km),
+                int(battery_level),
+                int(payload_kg),
+            )
+        except ValueError:
+            if len(d_drone) != expected_length:
+                raise ValueError(
+                    f"Expected {expected_length} pipe-separated values '|', but got {len(d_drone)}."
+                )
+            raise ValueError(
+                "Invalid format: 'max_range_km', 'battery_level' and 'payload_kg' must be convertible to integers."
+            )
+        return cls(vehicle_id, brand, model, max_range_km, battery_level, payload_kg)
+
 
 class CargoTruck(Vehicle):
     def __init__(
@@ -98,7 +161,68 @@ class CargoTruck(Vehicle):
         super().__init__(vehicle_id, brand, model, max_range_km, battery_level)
         self.trailer_count = trailer_count
 
+    def __str__(self):
+        return super().__str__() + f" | Trailer count: {self.trailer_count}"
 
-v1 = Vehicle.from_string("CHV-103|Chevrolet|Cruze|32|100")
-print(v1)
-print(repr(v1))
+    def __repr__(self):
+        return (
+            f"CargoTruck({self.vehicle_id!r}, {self.brand!r}, "
+            f"{self.model!r}, {self.max_range_km}, {self.battery_level}, {self.trailer_count})"
+        )
+
+    def __add__(self, other):
+        if not isinstance(other, type(self)):
+            return NotImplemented
+        return CargoTruck(
+            f"{self.vehicle_id}+{other.vehicle_id}",
+            f"HYBRID {self.brand}, {other.brand}",
+            f"HYBRID {self.model}, {other.model}",
+            self.max_range_km + other.max_range_km,
+            int((self.battery_level + other.battery_level) / 2),
+            self.trailer_count + other.trailer_count,
+        )
+
+    @classmethod
+    def from_string(cls, string):
+        expected_length = 6
+        try:
+            c_truck = string.split("|")
+            vehicle_id, brand, model, max_range_km, battery_level, trailer_count = (
+                c_truck
+            )
+            max_range_km, battery_level, trailer_count = (
+                int(max_range_km),
+                int(battery_level),
+                int(trailer_count),
+            )
+        except ValueError:
+            if len(c_truck) != expected_length:
+                raise ValueError(
+                    f"Expected {expected_length} pipe-separated values '|', but got {len(c_truck)}."
+                )
+            raise ValueError(
+                "Invalid format: 'max_range_km', 'battery_level' and 'trailer_count' must be convertible to integers."
+            )
+        return cls(vehicle_id, brand, model, max_range_km, battery_level, trailer_count)
+
+
+class FleetManager:
+    def __init__(self, vehicles=None):
+        self.vehicles = vehicles if vehicles is not None else {}
+
+    @classmethod
+    def add_vehicle(cls, *args):  # UNCOMPLETED
+        if args:
+            string = ""
+            for i in range(len(args)):
+                if i == len(args) - 1:
+                    string += f"{args[i]}"
+                string += f"{args[i]} |"
+
+
+v1 = Vehicle.from_string("CHV-103|Chevrolet|Cruze|13000|100")
+v2 = Vehicle.from_string("NSN-182|Nissan|GTR|15000|78")
+d1 = DeliveryDrone.from_string("001|Uber|TestModel|1500|54|5")
+d2 = DeliveryDrone.from_string("002|Tesla|TestModel|3000|99|15")
+c1 = CargoTruck.from_string("001|Trucks|TestModel|90000|37|100")
+c2 = CargoTruck.from_string("002|Trucks|TestModel|184782|58|987")
