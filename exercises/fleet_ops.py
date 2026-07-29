@@ -1,3 +1,7 @@
+import json
+from pprint import pprint
+
+
 class Vehicle:
     created_vehicles = 0
 
@@ -210,14 +214,41 @@ class FleetManager:
     def __init__(self, vehicles=None):
         self.vehicles = vehicles if vehicles is not None else {}
 
-    @classmethod
-    def add_vehicle(cls, *args):  # UNCOMPLETED
+    def add_vehicle(self, *args, **kwargs):
         if args:
+            if not isinstance(args[0], Vehicle):
+                raise TypeError(
+                    f"Expected a Vehicle instance in args, but got {type(args[0]).__name__}."
+                )
+            vehicle = args[0]
+        if kwargs:
             string = ""
-            for i in range(len(args)):
-                if i == len(args) - 1:
-                    string += f"{args[i]}"
-                string += f"{args[i]} |"
+            for index, value in enumerate(kwargs.values()):
+                if index == len(kwargs) - 1:
+                    string += f"{value}"
+                    break
+                string += f"{value}|"
+
+            if "payload_kg" in kwargs.keys():
+                vehicle = DeliveryDrone.from_string(string)
+            elif "trailer_count" in kwargs.keys():
+                vehicle = CargoTruck.from_string(string)
+            else:
+                vehicle = Vehicle.from_string(string)
+        if self.vehicles.get(vehicle.vehicle_id):
+            raise ValueError(
+                f"There is already a vehicle with the id {vehicle.vehicle_id}."
+            )
+        self.vehicles[vehicle.vehicle_id] = vehicle
+        return
+
+    def get_critical_vehicles(self):  # needs change, instead of for vehicle in self.vehicles ill use self.vehicles.values()
+        critical_status = ("critical", "low")
+        return [
+            self.vehicles[vehicle]
+            for vehicle in self.vehicles
+            if self.vehicles[vehicle].status in critical_status
+        ]
 
 
 v1 = Vehicle.from_string("CHV-103|Chevrolet|Cruze|13000|100")
@@ -226,3 +257,11 @@ d1 = DeliveryDrone.from_string("001|Uber|TestModel|1500|54|5")
 d2 = DeliveryDrone.from_string("002|Tesla|TestModel|3000|99|15")
 c1 = CargoTruck.from_string("001|Trucks|TestModel|90000|37|100")
 c2 = CargoTruck.from_string("002|Trucks|TestModel|184782|58|987")
+manager = FleetManager()
+manager.add_vehicle(v1)
+manager.add_vehicle(d1)
+manager.add_vehicle(c2)
+manager.add_vehicle(
+    id="CHV-003", brand="Chevrolet", model="Onix", max_range_km=1000, battery_level=38
+)
+pprint(manager.get_critical_vehicles())
