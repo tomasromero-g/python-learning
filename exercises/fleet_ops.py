@@ -1,5 +1,7 @@
 import json
-from pprint import pprint
+import os
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 class Vehicle:
@@ -242,13 +244,25 @@ class FleetManager:
         self.vehicles[vehicle.vehicle_id] = vehicle
         return
 
-    def get_critical_vehicles(self):  # needs change, instead of for vehicle in self.vehicles ill use self.vehicles.values()
+    def get_critical_vehicles(self):
         critical_status = ("critical", "low")
         return [
-            self.vehicles[vehicle]
-            for vehicle in self.vehicles
-            if self.vehicles[vehicle].status in critical_status
+            vehicle
+            for vehicle in self.vehicles.values()
+            if vehicle.status in critical_status
         ]
+
+    def sort_fleet(self, key="max_range_km", reverse=True):
+        return sorted(
+            self.vehicles.values(), key=lambda v: getattr(v, key), reverse=reverse
+        )
+
+    def export_status(self, filename):
+        vehicle_status = {}
+        for vehicle in self.vehicles.values():
+            vehicle_status[vehicle.vehicle_id] = vehicle.status
+        with open(filename, "w") as f:
+            json.dump(vehicle_status, f, indent=2)
 
 
 v1 = Vehicle.from_string("CHV-103|Chevrolet|Cruze|13000|100")
@@ -264,4 +278,4 @@ manager.add_vehicle(c2)
 manager.add_vehicle(
     id="CHV-003", brand="Chevrolet", model="Onix", max_range_km=1000, battery_level=38
 )
-pprint(manager.get_critical_vehicles())
+manager.export_status("vehicles.json")
