@@ -2,7 +2,10 @@ import logging
 from datetime import datetime
 from functools import wraps
 import random
+import os
+import json
 
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logs = []
@@ -48,11 +51,14 @@ class ImpossibleMob(DungeonError):
 
 
 class Adventurer:
-    def __init__(self, name: str, hp: int, lv: int, inventory: list):
+    def __init__(
+        self, name: str, hp: int, lv: int, inventory: list, died: bool = False
+    ):
         self.name = name
         self.hp = hp
         self.lv = lv
         self.inventory = inventory if inventory else []
+        self.died = died
 
 
 class Room:
@@ -70,8 +76,9 @@ class Room:
 
 
 class EnterRoom:
-    def __init__(self, room_numb: int):
+    def __init__(self, room_numb: int, adv_name: str):
         self.room_numb = room_numb
+        self.adv_name = adv_name
 
     def __enter__(self):
         logger.info("The user has entered the room.")
@@ -82,8 +89,9 @@ class EnterRoom:
         log = {
             "enter_time": self.enter_time.strftime("%H:%M:%S"),
             "room_numb": self.room_numb,
-            "exc_type": str(exc_type) if exc_type else None,
-            "exc_value": exc_value,
+            "adventurer_name": self.adv_name,
+            "exc_type": exc_type.__name__ if exc_type else None,
+            "exc_value": str(exc_value),
         }
         logs.append(log)
         return False
@@ -113,14 +121,20 @@ def retry_on(exc_types: list, n: int):
 
 
 @retry_on([TrapTriggered, OutOfResources, ImpossibleMob], 3)
-def explore_room(room: Room):
+def explore_room(room: Room, adventurer: Adventurer):
     if not round(random.random(), 2) <= room.error_prob:
         logger.info("Room explored succesfully.")
         return
     e = random.choice(room.exc_types)
     if e == TrapTriggered:
         trap_types = ["Poison", "Fire", "Wind"]
-        raise e(room.numb, random.choice(trap_types), random.randint(50, 1000))
+        dmg = random.randint(50, 1000)
+        new_hp = adventurer.hp - dmg
+        if new_hp > 0:
+            adventurer.hp = new_hp
+        else:
+            adventurer.hp, adventurer.inventory = 0, []
+        raise e(room.numb, random.choice(trap_types), dmg)
     elif e == OutOfResources:
         resources = ["Wood", "Stone", "Elixir"]
         raise e(
@@ -135,10 +149,42 @@ def explore_room(room: Room):
         raise ValueError("Uknown exception.")
 
 
-def traverse_rooms(rooms: list):
+def traverse_rooms(rooms: list, adventurers: list):
     for room in rooms:
-        with EnterRoom(room.numb):
-            explore_room(room)
+        deaths = False
+        for adventurer in adventurers:
+            if deaths:
+                continue
+            try:
+                with EnterRoom(room.numb, adventurer.name):
+                    explore_room(room, adventurer)
+            except:
+                logger.info("Exception detected.")
+            if (
+                adventurer.hp == 0
+            ):  # If the adventurer died, they revive and go to the next room instantly
+                adventurer.died = True
+                adventurer.hp = 100
+                deaths = True
+
+
+def generate_report(logs, adventurers, rooms, filename):
+    adv_survived = [adv.name for adv in adventurers if not adv.died]
+    all_rooms = [room.numb for room in rooms]
+    all_completed_rooms = [log["room_numb"] for log in logs if not log["exc_type"]]
+    valid_completed_rooms = [  # Is only valid if all adventurers could complete it
+        room
+        for room in all_rooms
+        if all_completed_rooms.count(room) == len(adventurers)
+    ]
+    log = {
+        "total_adventurers": len(adventurers),
+        "adv_survived": adv_survived,
+        "total_rooms": all_rooms,
+        "completed_rooms": valid_completed_rooms,
+    }
+    with open(filename, "w") as f:
+        json.dump(log, f, indent=2)
 
 
 adventurers = [
@@ -155,4 +201,5 @@ rooms = [
 ]
 
 
-traverse_rooms(rooms)
+traverse_rooms(rooms, adventurers)
+generate_report(logs, adventurers, rooms, "expedition.json")
