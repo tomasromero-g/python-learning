@@ -3,7 +3,7 @@
 This folder contains my daily practice exercises to master Python basics.
 I'm using these files to build a solid foundation before jumping into backend development (FastAPI, databases, etc...).
 
-**Status:** 🚧 In Progress
+**Status:** ✅ Finished
 
 ## Progression
 
