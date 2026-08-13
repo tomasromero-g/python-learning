@@ -257,6 +257,9 @@ class FleetManager:
             self.vehicles.values(), key=lambda v: getattr(v, key), reverse=reverse
         )
 
+    def total_fleet_range(self):
+        return sum(vehicle.max_range_km for vehicle in self.vehicles.values())
+
     def export_status(self, filename):
         vehicle_status = {}
         for vehicle in self.vehicles.values():
