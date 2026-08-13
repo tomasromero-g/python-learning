@@ -260,6 +260,12 @@ class FleetManager:
     def total_fleet_range(self):
         return sum(vehicle.max_range_km for vehicle in self.vehicles.values())
 
+    def count_by_status(self):
+        counts = {}
+        for vehicle in self.vehicles.values():
+            counts[vehicle.status] = counts.get(vehicle.status, 0) + 1
+        return counts
+
     def export_status(self, filename):
         vehicle_status = {}
         for vehicle in self.vehicles.values():
