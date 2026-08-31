@@ -31,6 +31,3 @@ the only exercise where it's used.
 | 13 | `13_guild_recruitment.py` | OOP II — instance vs. class attributes, inheritance with `super()`, `classmethod` as alt constructor, `staticmethod` |
 | 14 | `14_fleet_ops.py` | OOP III — inheritance, getters/setters/deleters, dunder methods |
 | 15 | `15_dungeon_exceptions.py` | Advanced exceptions |
-
----
-*Note: Once I finish all the basics, this folder will remain as my personal cheat sheet and syntax reference.*

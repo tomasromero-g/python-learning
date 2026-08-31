@@ -17,4 +17,4 @@ I'm a Systems Engineering student (UTN) who built a solid Python foundation here
 Python 3.x — no external dependencies for the fundamentals exercises.
 
 ---
-*See my [profile README](https://github.com/TU_USUARIO) for the full roadmap and other projects.*
+*See my [profile README](https://github.com/tomasromero-g) for the full roadmap and other projects.*
